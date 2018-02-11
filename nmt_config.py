@@ -108,9 +108,9 @@ load_existing_model = True
 # Training Parameters
 #---------------------------------------------------------------------
 # Training EPOCHS
-NUM_EPOCHS = 2
+NUM_EPOCHS = 12
 # if >= 0, use GPU, if negative use CPU
-gpuid = -1
+gpuid = 0
 #---------------------------------------------------------------------
 # Log file details - changing the following names not recommended
 #---------------------------------------------------------------------

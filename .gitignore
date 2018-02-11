@@ -7,3 +7,5 @@ model/train_10000sen_2-2layers_100units_ja_en_exp1_NO_ATTN.log
 model/train_10000sen_2-3layers_100units_ja_en_exp1_NO_ATTN.log
 model/train_1000sen_2-3layers_100units_ja_en_exp1_NO_ATTN.log
 model/train_1000sen_2-3layers_100units_ja_en_exp1_SOFT_ATTN.log
+model/seq2seq_1000sen_2-3layers_100units_ja_en_exp1_SOFT_ATTN.model
+model/train_10000sen_1-1layers_100units_ja_en_exp1_NO_ATTN.log
