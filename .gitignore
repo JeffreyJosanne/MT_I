@@ -1,0 +1,9 @@
+model/seq2seq_1000sen_2-3layers_100units_ja_en_exp1_NO_ATTN.model
+__pycache__/enc_dec.cpython-36.pyc
+__pycache__/nmt_config.cpython-36.pyc
+model/seq2seq_10000sen_2-2layers_100units_ja_en_exp1_NO_ATTN.model
+model/seq2seq_10000sen_2-3layers_100units_ja_en_exp1_NO_ATTN.model
+model/train_10000sen_2-2layers_100units_ja_en_exp1_NO_ATTN.log
+model/train_10000sen_2-3layers_100units_ja_en_exp1_NO_ATTN.log
+model/train_1000sen_2-3layers_100units_ja_en_exp1_NO_ATTN.log
+model/train_1000sen_2-3layers_100units_ja_en_exp1_SOFT_ATTN.log

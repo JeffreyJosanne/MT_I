@@ -86,6 +86,7 @@ class EncoderDecoder(Chain):
 
         if attn > 0:
             # __QUESTION Add attention
+            self.add_link("attention_layer", L.Linear(2*n_units, 2*n_units))
             pass
 
         # Save the attention preference
@@ -136,6 +137,8 @@ class EncoderDecoder(Chain):
         # feed into remaining LSTM layers
         for lstm_layer in lstm_layer_list[1:]:
             hs = self[lstm_layer](hs)
+            # with chainer.using_config('train', train):      # Dropout is only done at training and not at testing time
+            #     hs = F.dropout(self[lstm_layer](hs), ratio=0.2)
 
     # Function to encode an source sentence word
     def encode(self, word, lstm_layer_list, train):
@@ -242,7 +245,14 @@ class EncoderDecoder(Chain):
                 predicted_out = self.out(self[self.lstm_dec[-1]].h)
             else:
                 # __QUESTION Add attention
-                pass
+                h_decoder = self[self.lstm_dec[-1]].h.data.reshape(2 * self.n_units)
+                h_encoder = enc_states.data
+                attention_vector = xp.dot(h_encoder, h_decoder)
+                attention_score_nl = F.softmax(attention_vector.reshape(1, attention_vector.shape[0]))
+                context_vector = xp.dot(attention_score_nl, h_encoder)
+                hidden = F.concat((context_vector, h_decoder),axis=1)
+                hidden_nl = F.tanh(self["attention_layer"](hidden))
+                predicted_out = self.out(hidden_nl)
 
             # compute loss
             prob = F.softmax(predicted_out)
@@ -282,7 +292,16 @@ class EncoderDecoder(Chain):
                 prob = F.softmax(self.out(self[self.lstm_dec[-1]].h))
             else:
                 # __QUESTION Add attention
-                pass
+                h_decoder = self[self.lstm_dec[-1]].h.data.reshape(2 * self.n_units)
+                h_encoder = enc_states.data
+                attention_vector = xp.dot(h_encoder, h_decoder)
+                attention_score_nl = F.softmax(attention_vector.reshape(1, attention_vector.shape[0]))
+                context_vector = xp.dot(attention_score_nl, h_encoder)
+                hidden = F.concat((context_vector,h_decoder),axis=1)
+                hidden_nl = F.tanh(self["attention_layer"](hidden))
+                predicted_out = self.out(hidden_nl)
+                prob = F.softmax(predicted_out)
+                alpha_arr = np.concatenate((alpha_arr,attention_score_nl.data),axis=0)
 
             pred_word = self.select_word(prob, train=False, sample=sample)
             # add integer id of predicted word to output list
