@@ -71,7 +71,11 @@ optimizer_sgd.setup(model)
 
 '''
 ___QUESTION-1-DESCRIBE-F-START___
+Since we are not dealing woth mini batches, we have the disadvantage of letting loss gradients to explode though it is an LSTM. Therefore we are implementing Gradient clipping 
+via add_hook(). With larger batches (or full corpus), it is common to observe larger gradient fluctuations and tendency for gradient to overshoot and miss the loss minima.
+Whenever the gradient fluctuation exceeds 5, we do L2 norm on the loss to preserve loss within limit so that it doesn't miss the local (or global) minimum.
 
+We are implementing the gradientclipping to both adam and sgd optimizers which are used at different epochs.
 - Describe what the following lines of code do
 '''
 optimizer_adam.add_hook(chainer.optimizer.GradientClipping(threshold=5))
@@ -265,12 +269,12 @@ def train_loop(text_fname, num_training, num_epochs, log_mode="a"):
         print("{0:s}".format("-"*50))
 
         # Compute Bleu every 2 epochs
-        if epoch % 2 == 0:
-            print("computing bleu")
-            bleu_score = compute_dev_bleu()
-            print("finished computing bleu ... ")
-            print("{0:s}".format("-"*50))
-            log_train_csv.writerow([epoch, bleu_score])
+        # if epoch % 2 == 0:
+        print("computing bleu")
+        bleu_score = compute_dev_bleu()
+        print("finished computing bleu ... ")
+        print("{0:s}".format("-"*50))
+        log_train_csv.writerow([epoch, bleu_score])
         
     # At the end of training, make some predictions
     # make predictions over both training and dev sets

@@ -49,7 +49,25 @@ class EncoderDecoder(Chain):
 
         - Explain the following lines of code
         - Think about what add_link() does and how can we access Links added in Chainer.
-        - Why are there two loops or adding links?
+        - Why are there two loops for adding links?
+
+
+        ___ANSWER-1:
+
+        - The following code creates a list of layer names in a list for a given number of layers.
+        Then the given number of layers are created with their assigned names and attached to the architecture.
+        This code doesn't do any computation like forward pass but it does create placeholders for filling in their parameters later.
+
+        - Considering EncoderDecoder as the complex chain, add_link() adds a layer of neuron cells (like lstm or gru)
+        to the complex chain. We can access the chainer links by two syntaxes: 
+        1. self.name_of_the_link(hidden_states or embeddings)
+        or 
+        2. self[name_of_the_link](hidden_states or embeddings)
+
+        - Owing to the bi-directional architecture of the encoder-decoder model, we use two loops for adding links, where the first loop creates a set of LSTM layers,
+        that can learn in the right direction and the next loop creates the same sized LSTM layers that learn  in the opposite direction. This helps to learn the 
+        past and future influence of words on the current word. This lets us learn the most intimate relationship between entities with regards to syntax. 
+
         '''
         self.lstm_enc = ["L{0:d}_enc".format(i) for i in range(nlayers_enc)]
         for lstm_name in self.lstm_enc:
@@ -70,11 +88,12 @@ class EncoderDecoder(Chain):
         '''
         ___QUESTION-1-DESCRIBE-B-START___
         Comment on the input and output sizes of the following layers:
-        - L.EmbedID(vsize_dec, 2*n_units)
-        - L.LSTM(2*n_units, 2*n_units)
-        - L.Linear(2*n_units, vsize_dec)
+        - L.EmbedID(vsize_dec, 2*n_units) - An interface layer that accepts the embedding vectors and pass it to the hidden space whose dimension is 2*n_units, 2*n_units
+        - L.LSTM(2*n_units, 2*n_units) - The LSTM layer that does all the computations and sets up a coputation space. 
+        - L.Linear(2*n_units, vsize_dec) - Again an interface that gives out multiple instances of probabilities for every word that can occur in that time step.
 
         Why are we using multipliers over the base number of units (n_units)?
+        
         '''
 
         self.add_link("embed_dec", L.EmbedID(vsize_dec, 2*n_units))
@@ -114,6 +133,10 @@ class EncoderDecoder(Chain):
         ___QUESTION-1-DESCRIBE-C-START___
 
         Describe what the function set_decoder_state() is doing. What are c_state and h_state?
+        As in theory the final states (concatenated states of both the bi-directional layers) of the encoder gets passed to the initial states of the decoder, 
+        and set_decoder_state() function does the same. 
+        c_state - cell state of an LSTM - This is where the actual information flows through, which will later be modulated by the LSTM gates.
+        h_state - hidden state of an LSTM - Hidden parameters of a neural network.
     '''
     def set_decoder_state(self):
         xp = cuda.cupy if self.gpuid >= 0 else np
@@ -131,14 +154,23 @@ class EncoderDecoder(Chain):
     '''
     def feed_lstm(self, word, embed_layer, lstm_layer_list, train):
         # get embedding for word
-        embed_id = embed_layer(word)
+        # embed_id = embed_layer(word)
+        # # feed into first LSTM layer
+        # hs = self[lstm_layer_list[0]](embed_id)
+        # # feed into remaining LSTM layers
+        # for lstm_layer in lstm_layer_list[1:]:
+        #     # hs = self[lstm_layer](hs)
+        #     with chainer.using_config('train', train):      # Dropout is only done at training and not at testing time
+        #         hs = self[lstm_layer](hs)
+        dropout_ratio = 0.5
+        # get embedding for word
+        embed_id = F.dropout(embed_layer(word), ratio=dropout_ratio)
         # feed into first LSTM layer
-        hs = self[lstm_layer_list[0]](embed_id)
+        hs = F.dropout(self[lstm_layer_list[0]](embed_id), ratio=dropout_ratio)
         # feed into remaining LSTM layers
         for lstm_layer in lstm_layer_list[1:]:
-            # hs = self[lstm_layer](hs)
-            with chainer.using_config('train', train):      # Dropout is only done at training and not at testing time
-                hs = F.dropout(self[lstm_layer](hs), ratio=0.2)
+            # hs = self[lstm_layer](hs)     # Dropout is only done at training and not at testing time
+            hs = F.dropout(self[lstm_layer](hs), ratio=dropout_ratio)
 
     # Function to encode an source sentence word
     def encode(self, word, lstm_layer_list, train):
@@ -170,6 +202,9 @@ class EncoderDecoder(Chain):
             ___QUESTION-1-DESCRIBE-D-START___
 
             - Explain why we are performing two encode operations
+            Two encode operations which encodes 'left-to-right' and 'right-to-left' direction of the text. Doing this way, the network learns whether both the future 
+            and past texts influence the current text or not. These are separately learnt and finally concatenated before being passed on to the decoder.
+
             '''
             self.encode(f_word, self.lstm_enc, train)
             self.encode(r_word, self.lstm_rev_enc, train)
@@ -262,6 +297,11 @@ class EncoderDecoder(Chain):
             ___QUESTION-1-DESCRIBE-E-START___
             Explain what loss is computed with an example
             What does this value mean?
+
+            We compute cross entropy loss and the function in chainer is named as softmax_cross_entropy() as cross_entropy here is measured after a softmax at the outer layer.
+            Cross entropy basically computes the difference between two probability distributions (the hypothesised probability (softmaxed vector values) from the model and the training set).
+            y = [0, 0, 1] and y_predicted = [0.2, 0.2, 0.6]. C.E = - (0*log(0.2) + 0*log(0.2) + 1*log(0.6)). Higher the probability at the correct value in y_predicted,
+            lower the loss (negative log probability).
             '''
             self.loss += F.softmax_cross_entropy(predicted_out, next_word_var)
             '''___QUESTION-1-DESCRIBE-E-END___'''

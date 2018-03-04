@@ -97,7 +97,7 @@ num_layers_dec = 3
 hidden_units = 100
 # default model - no attention
 # when implementing attention use either - SOFT_ATTN or HARD_ATTN
-use_attn = SOFT_ATTN
+use_attn = NO_ATTN
 '''
 KEEP this flag true to avoid losing earlier trained models
 The code checks if a trained model file with the selected parameters
@@ -108,9 +108,9 @@ load_existing_model = True
 # Training Parameters
 #---------------------------------------------------------------------
 # Training EPOCHS
-NUM_EPOCHS = 12
+NUM_EPOCHS = 13
 # if >= 0, use GPU, if negative use CPU
-gpuid = 0
+gpuid = -1
 #---------------------------------------------------------------------
 # Log file details - changing the following names not recommended
 #---------------------------------------------------------------------
