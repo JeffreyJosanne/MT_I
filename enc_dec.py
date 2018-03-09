@@ -154,23 +154,30 @@ class EncoderDecoder(Chain):
     '''
     def feed_lstm(self, word, embed_layer, lstm_layer_list, train):
         # get embedding for word
-        # embed_id = embed_layer(word)
-        # # feed into first LSTM layer
-        # hs = self[lstm_layer_list[0]](embed_id)
-        # # feed into remaining LSTM layers
-        # for lstm_layer in lstm_layer_list[1:]:
-        #     # hs = self[lstm_layer](hs)
-        #     with chainer.using_config('train', train):      # Dropout is only done at training and not at testing time
-        #         hs = self[lstm_layer](hs)
-        dropout_ratio = 0.5
-        # get embedding for word
-        embed_id = F.dropout(embed_layer(word), ratio=dropout_ratio)
+        embed_id = embed_layer(word)
         # feed into first LSTM layer
-        hs = F.dropout(self[lstm_layer_list[0]](embed_id), ratio=dropout_ratio)
+        hs = self[lstm_layer_list[0]](embed_id)
         # feed into remaining LSTM layers
         for lstm_layer in lstm_layer_list[1:]:
-            # hs = self[lstm_layer](hs)     # Dropout is only done at training and not at testing time
-            hs = F.dropout(self[lstm_layer](hs), ratio=dropout_ratio)
+            hs = self[lstm_layer](hs)
+            # with chainer.using_config('train', train):      # Dropout is only done at training and not at testing time
+            #     hs = self[lstm_layer](hs)
+        # dropout_ratio = 0.5
+        # # get embedding for word
+        # embed_id = F.dropout(embed_layer(word), ratio=dropout_ratio)
+        # # feed into first LSTM layer
+        # hs = F.dropout(self[lstm_layer_list[0]](embed_id), ratio=dropout_ratio)
+        # # feed into remaining LSTM layers
+        # # print('So it got in')
+        # for lstm_layer in lstm_layer_list[1:]:
+        #     # hs = self[lstm_layer](hs)     # Dropout is only done at training and not at testing time
+        #     # print('So it got in')
+        #     if lstm_layer is not lstm_layer_list[-1]:
+        #         hs = F.dropout(self[lstm_layer](hs), ratio=dropout_ratio)
+        #         # print('non-recurrent layer')
+        #     elif lstm_layer is lstm_layer_list[-1]:
+        #         hs = self[lstm_layer](hs)
+        #         # print('recurrent layer hence no dropout')
 
     # Function to encode an source sentence word
     def encode(self, word, lstm_layer_list, train):
@@ -242,10 +249,14 @@ class EncoderDecoder(Chain):
         else:
             '''
             ___QUESTION-2-SAMPLE
-
+            
             - Add code to sample from the probability distribution to
             choose the next word
             '''
+            print('------------------------------------------------')
+            prob = xp.argmax(prob.data[0])
+            index=xp.random.choice(range(len(prob)),p=prob)
+            pred_word = Variable(xp.asarray([indx], dtype=np.int32), volatile=not train)
             pass
         return pred_word
 
@@ -282,12 +293,14 @@ class EncoderDecoder(Chain):
                 # __QUESTION Add attention
                 hidden_decoder=self[self.lstm_dec[-1]].h
                 hidden_encoder=enc_states
-                attention = F.matmul(hidden_decoder, hidden_encoder, transa=False, transb=True)
-                attention_nl = F.softmax(attention)
-                context=F.matmul(attention_nl,hidden_encoder, transa=False, transb=False)
-                final_vector=F.concat((context,hidden_decoder),axis=1)
-                final_nl=F.tanh(self.attention_layer(final_vector))
-                predicted_out = self.out(final_nl)
+                a_t = F.matmul(hidden_decoder, hidden_encoder, transa=False, transb=True)
+                score = F.softmax(a_t)
+                context=F.matmul(score,hidden_encoder)
+                final_vector=F.concat((context,hidden_decoder))
+                h_t_p=F.tanh(final_vector)
+                predict = self.attention_layer(h_t_p)
+                predicted_out = self.out(predict)
+                
 
             # compute loss
             prob = F.softmax(predicted_out)
@@ -334,14 +347,15 @@ class EncoderDecoder(Chain):
                 # __QUESTION Add attention
                 hidden_decoder=self[self.lstm_dec[-1]].h
                 hidden_encoder=enc_states
-                attention = F.matmul(hidden_decoder, hidden_encoder, transa=False, transb=True)
-                attention_nl = F.softmax(attention)
-                context=F.matmul(attention_nl,hidden_encoder, transa=False, transb=False)
-                final_vector=F.concat((context,hidden_decoder),axis=1)
-                final_nl=F.tanh(self.attention_layer(final_vector))
-                predicted_out = self.out(final_nl)
+                a_t = F.matmul(hidden_decoder, hidden_encoder, transa=False, transb=True)
+                score = F.softmax(a_t)
+                context=F.matmul(score,hidden_encoder)
+                final_vector=F.concat((context,hidden_decoder))
+                h_t_p=F.tanh(final_vector)
+                predict = self.attention_layer(h_t_p)
+                predicted_out = self.out(predict)
                 prob = F.softmax(predicted_out)
-                alpha_arr = np.concatenate((alpha_arr,attention_nl.data),axis=0)
+                alpha_arr = np.concatenate((alpha_arr,score.data),axis=0)
 
             pred_word = self.select_word(prob, train=False, sample=sample)
             # add integer id of predicted word to output list

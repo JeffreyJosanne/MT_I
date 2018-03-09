@@ -89,15 +89,15 @@ else:
 # Model Parameters
 #---------------------------------------------------------------------
 # number of LSTM layers for encoder
-num_layers_enc = 2
+num_layers_enc = 1
 # number of LSTM layers for decoder
-num_layers_dec = 3
+num_layers_dec = 1
 # number of hidden units per LSTM
 # both encoder, decoder are similarly structured
 hidden_units = 100
 # default model - no attention
 # when implementing attention use either - SOFT_ATTN or HARD_ATTN
-use_attn = NO_ATTN
+use_attn = SOFT_ATTN
 '''
 KEEP this flag true to avoid losing earlier trained models
 The code checks if a trained model file with the selected parameters

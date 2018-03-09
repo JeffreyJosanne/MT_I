@@ -287,9 +287,8 @@ def train_loop(text_fname, num_training, num_epochs, log_mode="a"):
 
     print("{0:s}".format("-"*50))
     # Check if Bleu needs to be recomputed
-    if num_epochs % 2 != 0:
-        bleu_score = compute_dev_bleu()
-        print("{0:s}".format("-"*50))
+    bleu_score = compute_dev_bleu()
+    print("{0:s}".format("-"*50))
     print("{0:s}".format("-"*50))
 
     # close log file
